@@ -1,0 +1,30 @@
+# HAProxy ingress alternative (haproxytech controller, installed via its helm chart with a
+# separate ingressClass so it can run alongside nginx). Annotations cover health checks,
+# forwarded headers and load balancing.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: petclinic-haproxy
+  namespace: petclinic
+  annotations:
+    haproxy.org/check: "true"              # active backend health checks
+    haproxy.org/check-interval: "5s"
+    haproxy.org/forwarded-for: "true"      # inject X-Forwarded-For
+    haproxy.org/load-balance: "roundrobin" # algorithm (roundrobin | leastconn)
+    haproxy.org/ssl-redirect: "true"
+spec:
+  ingressClassName: haproxy
+  tls:
+    - hosts: [petclinic.local]
+      secretName: petclinic-tls
+  rules:
+    - host: petclinic.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: petclinic
+                port:
+                  number: 80
