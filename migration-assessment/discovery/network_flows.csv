@@ -1,0 +1,10 @@
+source,destination,port,protocol,direction,classification,expected_policy,notes
+internet-client,ingress-nginx,443,HTTPS,ingress,ingress,Allowed,TLS termination at ingress controller (Module 4)
+ingress-nginx,petclinic.petclinic.svc,8080,HTTP,ingress,ingress,Allowed,Host petclinic.local routed to app Service
+petclinic-pod,postgres.petclinic.svc,5432,TCP,egress,database,Allowed,Primary datastore; becomes Azure DB for PostgreSQL on AKS
+petclinic-pod,kube-dns,53,UDP/TCP,egress,service-to-service,Allowed,DNS resolution required before any egress
+petclinic-pod,partner-api (approved FQDN),443,HTTPS,egress,external-api,Allowed,Modeled partner/3rd-party API allowlist for egress test matrix
+petclinic-pod,*.internet (unapproved),443,HTTPS,egress,external-api,Denied,Default-deny egress; only approved FQDNs permitted (Module 5)
+test-unauthorized-ns-pod,petclinic-pod,8080,HTTP,ingress,service-to-service,Denied,Cross-namespace access blocked by NetworkPolicy (Module 5)
+postgres-pod,pvc (local-path / managed-csi),n/a,filesystem,egress,filesystem,Allowed,Persistent volume for database data
+petclinic-pod,demo-db secret,n/a,n/a,mount,secrets,Allowed,DB credentials; Key Vault + CSI on AKS

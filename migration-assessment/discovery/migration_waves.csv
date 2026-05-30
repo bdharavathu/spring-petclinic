@@ -1,0 +1,6 @@
+wave,app,namespace,depends_on,strategy_6R,cutover_window,downtime,risk,validation
+0,Landing zone (AKS + ACR + Key Vault + VNet),platform,none,n/a,Pre-migration (Sat AM),none,Low,terraform plan + cluster reachable
+1,Azure DB for PostgreSQL Flexible Server + data load,petclinic,wave-0,Replatform,Maintenance window 1,Read-only window,High,Row counts match + app smoke test against managed DB
+2,petclinic app (image to ACR + Helm deploy),petclinic,wave-1,Replatform,Maintenance window 2,Blue/green - near zero,Medium,/actuator/health + UI CRUD + ingress 200
+3,Ingress DNS + TLS cutover,petclinic,wave-2,Rehost,Low-TTL DNS switch,near zero,Medium,curl host returns 200 + cert valid
+4,Network policy + Tetragon enforcement,petclinic,wave-2,Refactor,Post-cutover hardening,none,Low,Egress test matrix pass + Tetragon events flowing

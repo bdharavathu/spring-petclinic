@@ -1,0 +1,167 @@
+{
+  "workloads": [
+    {
+      "namespace": "petclinic",
+      "kind": "Deployment",
+      "name": "petclinic",
+      "container": "petclinic",
+      "image": "petclinic:onprem",
+      "runtime": "unknown",
+      "replicas": 1,
+      "ports": [
+        8080
+      ],
+      "env_keys": [
+        "POSTGRES_USER",
+        "POSTGRES_PASS"
+      ],
+      "secrets": [
+        "demo-db"
+      ],
+      "configmaps": [
+        "petclinic-config"
+      ],
+      "pvcs": [],
+      "service_account": "petclinic",
+      "databases": [
+        "jdbc:postgresql://postgres:5432/petclinic"
+      ],
+      "external_urls": [],
+      "requests": {
+        "cpu": "250m",
+        "memory": "512Mi"
+      },
+      "limits": {
+        "cpu": "1",
+        "memory": "1Gi"
+      },
+      "probes": [
+        "liveness",
+        "readiness",
+        "startup"
+      ]
+    },
+    {
+      "namespace": "petclinic",
+      "kind": "StatefulSet",
+      "name": "postgres",
+      "container": "postgres",
+      "image": "postgres:18.3",
+      "runtime": "postgres",
+      "replicas": 1,
+      "ports": [
+        5432
+      ],
+      "env_keys": [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+        "PGDATA"
+      ],
+      "secrets": [
+        "demo-db"
+      ],
+      "configmaps": [],
+      "pvcs": [
+        "data (vct)"
+      ],
+      "service_account": null,
+      "databases": [],
+      "external_urls": [],
+      "requests": {
+        "cpu": "100m",
+        "memory": "128Mi"
+      },
+      "limits": {
+        "cpu": "500m",
+        "memory": "512Mi"
+      },
+      "probes": [
+        "liveness",
+        "readiness"
+      ]
+    }
+  ],
+  "resources": {
+    "services": [
+      {
+        "namespace": "petclinic",
+        "name": "petclinic",
+        "type": "ClusterIP",
+        "ports": [
+          "80->http"
+        ]
+      },
+      {
+        "namespace": "petclinic",
+        "name": "postgres",
+        "type": "ClusterIP",
+        "ports": [
+          "5432->postgres"
+        ]
+      }
+    ],
+    "ingress": [],
+    "configmaps": [
+      {
+        "namespace": "petclinic",
+        "name": "kube-root-ca.crt",
+        "keys": [
+          "ca.crt"
+        ]
+      },
+      {
+        "namespace": "petclinic",
+        "name": "petclinic-config",
+        "keys": [
+          "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE",
+          "MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED",
+          "MANAGEMENT_HEALTH_LIVENESSSTATE_ENABLED",
+          "MANAGEMENT_HEALTH_READINESSSTATE_ENABLED",
+          "POSTGRES_URL",
+          "SPRING_PROFILES_ACTIVE"
+        ]
+      }
+    ],
+    "secrets": [
+      {
+        "namespace": "petclinic",
+        "name": "demo-db",
+        "keys": [
+          "database",
+          "password",
+          "username"
+        ],
+        "type": "Opaque"
+      }
+    ],
+    "pvc": [
+      {
+        "namespace": "petclinic",
+        "name": "data-postgres-0",
+        "storage": "1Gi"
+      }
+    ],
+    "serviceaccounts": [
+      {
+        "namespace": "petclinic",
+        "name": "default"
+      },
+      {
+        "namespace": "petclinic",
+        "name": "petclinic"
+      }
+    ],
+    "networkpolicies": []
+  },
+  "totals": {
+    "services": 2,
+    "ingress": 0,
+    "configmaps": 2,
+    "secrets": 1,
+    "pvc": 1,
+    "serviceaccounts": 2,
+    "networkpolicies": 0,
+    "workload_containers": 2
+  }
+}

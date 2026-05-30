@@ -1,6 +1,7 @@
 HELP.md
 pom.xml.bak
 target/
+local/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -46,3 +47,15 @@ out/
 _site/
 *.css
 !petclinic.css
+
+### macOS ###
+.DS_Store
+
+### Terraform ###
+.terraform/
+*.tfstate
+*.tfstate.*
+tfplan
+*.tfvars
+!*.tfvars.example
+!free-tier.tfvars
