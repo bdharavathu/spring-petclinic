@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.0.3</version>
+    <version>4.0.6</version>
   </parent>
 
   <groupId>org.springframework.samples</groupId>
@@ -35,6 +35,10 @@
     <maven-checkstyle.version>3.6.0</maven-checkstyle.version>
     <nohttp-checkstyle.version>0.0.11</nohttp-checkstyle.version>
     <spring-format.version>0.0.47</spring-format.version>
+
+    <!-- pull patched managed deps ahead of the parent BOM (CVE remediation) -->
+    <tomcat.version>11.0.22</tomcat.version>
+    <postgresql.version>42.7.11</postgresql.version>
   </properties>
 
   <dependencies>
