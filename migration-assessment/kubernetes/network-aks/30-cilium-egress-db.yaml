@@ -1,0 +1,19 @@
+# Azure CNI powered by Cilium does NOT support toFQDNs (see README).
+# CIDR-pin to the resolved managed-PG IP for the demo; production uses Azure Firewall in front
+# for FQDN-level control with this Cilium policy as defense-in-depth.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: petclinic-egress-managed-pg
+  namespace: petclinic
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: petclinic
+  egress:
+    - toCIDR:
+        - 4.193.230.74/32 # petclinic-pg-gqweq.postgres.database.azure.com (resolved)
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP

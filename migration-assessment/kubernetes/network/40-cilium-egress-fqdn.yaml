@@ -1,0 +1,30 @@
+# Cilium FQDN egress: the app may only call the approved partner API over 443.
+# DNS is served through Cilium's L7 proxy so it can learn the FQDN's IPs; any other
+# external destination is denied even though the name resolves.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: petclinic-egress-fqdn
+  namespace: petclinic
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: petclinic
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toFQDNs:
+        - matchName: api.github.com
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

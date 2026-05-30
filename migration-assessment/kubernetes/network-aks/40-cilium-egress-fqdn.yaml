@@ -1,0 +1,19 @@
+# Azure CNI powered by Cilium does NOT support toFQDNs (see README).
+# CIDR-pin to the partner-API IP for the demo; production uses Azure Firewall in front for
+# FQDN-level control with this Cilium policy as defense-in-depth.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: petclinic-egress-partner
+  namespace: petclinic
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: petclinic
+  egress:
+    - toCIDR:
+        - 20.205.243.168/32 # api.github.com (modeled approved partner API)
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
