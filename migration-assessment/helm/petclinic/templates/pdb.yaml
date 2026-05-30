@@ -1,0 +1,12 @@
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: petclinic
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "petclinic.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  selector:
+    matchLabels: {{- include "petclinic.selectorLabels" . | nindent 6 }}
+{{- end }}

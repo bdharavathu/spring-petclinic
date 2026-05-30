@@ -1,0 +1,15 @@
+# Rendered from helm/petclinic/templates/pdb.yaml (on-prem values). The chart is the source
+# of truth; this standalone copy is here for reviewers who want plain manifests.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: petclinic
+  namespace: petclinic
+  labels:
+    app.kubernetes.io/name: petclinic
+    app.kubernetes.io/part-of: petclinic
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: petclinic

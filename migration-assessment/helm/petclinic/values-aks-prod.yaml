@@ -1,0 +1,45 @@
+# AKS production overlay. Higher replicas/HPA floor, TLS via cert-manager, managed Postgres.
+replicaCount: 3
+
+image:
+  repository: acrpetclinic.azurecr.io/petclinic
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+postgres:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  host: petclinic.example.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    enabled: true
+    secretName: petclinic-tls
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 768Mi
+  limits:
+    cpu: "2"
+    memory: 1536Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+pdb:
+  enabled: true
+  minAvailable: 2
+
+database:
+  host: pg-petclinic-prod.postgres.database.azure.com
+  port: 5432
+  name: petclinic
+  params: "?sslmode=require"
+  existingSecret: petclinic-db   # synced from Key Vault via Secret Store CSI

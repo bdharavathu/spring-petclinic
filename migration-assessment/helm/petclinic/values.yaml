@@ -1,0 +1,78 @@
+replicaCount: 1
+
+image:
+  repository: petclinic
+  tag: onprem
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: petclinic
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: nginx
+  host: petclinic.local
+  annotations: {}
+  tls:
+    enabled: false
+    secretName: ""
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 75
+
+pdb:
+  enabled: false
+  minAvailable: 1
+
+# DB connection. Host/port/name build the JDBC URL and feed the wait-for-db init container.
+# Credentials come from an existing Secret (on AKS: Key Vault + CSI), never from values.
+database:
+  host: postgres
+  port: 5432
+  name: petclinic
+  params: ""
+  existingSecret: demo-db
+  usernameKey: username
+  passwordKey: password
+
+# In-cluster Postgres - on-prem only. AKS overlays disable this and point database.url
+# at Azure Database for PostgreSQL.
+postgres:
+  enabled: false
+  image: postgres:18.3
+  storage: 1Gi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# Azure workload identity + Key Vault CSI (AKS overlays). Real IDs come from --set, never committed.
+azure:
+  keyVaultCsi: false
+  workloadIdentityClientId: ""
+  keyVaultName: ""
+  tenantId: ""

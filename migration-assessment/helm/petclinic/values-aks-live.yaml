@@ -1,0 +1,44 @@
+# Live AKS deploy on the single free-tier node. Image repo/tag, managed-PG host and the Azure
+# IDs are passed at deploy time with --set (kept out of git).
+replicaCount: 1
+
+image:
+  pullPolicy: IfNotPresent
+
+postgres:
+  enabled: false # managed Azure Database for PostgreSQL
+
+ingress:
+  enabled: true
+  className: nginx
+  tls:
+    enabled: false # Azure DNS label on the LB public IP; cert-manager for real TLS
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 2
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+database:
+  port: 5432
+  name: petclinic
+  params: "?sslmode=require"
+  existingSecret: petclinic-db # created by the SecretProviderClass from Key Vault
+  usernameKey: username
+  passwordKey: password
+
+azure:
+  keyVaultCsi: true
+
+# Lean footprint for the free-tier nodes (the app idles ~300Mi / a few millicpu).
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: 750m
+    memory: 1Gi

@@ -1,0 +1,28 @@
+# On-prem k3d simulation overlay.
+image:
+  repository: petclinic
+  tag: onprem
+
+postgres:
+  enabled: true
+
+ingress:
+  enabled: true
+  tls:
+    enabled: true
+    secretName: petclinic-tls
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 4
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+database:
+  host: postgres
+  port: 5432
+  name: petclinic
+  existingSecret: demo-db
