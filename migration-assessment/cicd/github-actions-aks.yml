@@ -1,0 +1,57 @@
+name: aks-deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'migration-assessment/helm/**'
+      - 'migration-assessment/tetragon/**'
+      - '.github/workflows/aks-deploy.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_NAME }}
+
+      - uses: azure/setup-helm@v4
+
+      - name: Tetragon (runtime observability)
+        run: |
+          helm repo add cilium https://helm.cilium.io
+          helm repo update cilium
+          helm upgrade --install tetragon cilium/tetragon -n kube-system
+          kubectl -n kube-system rollout status ds/tetragon --timeout=240s
+          kubectl apply -f migration-assessment/tetragon/tracingpolicy.yaml
+
+      - name: Deploy petclinic
+        run: |
+          helm upgrade --install petclinic migration-assessment/helm/petclinic \
+            -n petclinic --create-namespace \
+            -f migration-assessment/helm/petclinic/values-aks-live.yaml \
+            --set image.repository=${{ vars.ACR_LOGIN_SERVER }}/petclinic \
+            --set image.tag=${{ vars.IMAGE_TAG }} \
+            --set database.host=${{ vars.PG_HOST }} \
+            --set azure.workloadIdentityClientId=${{ vars.APP_IDENTITY_CLIENT_ID }} \
+            --set azure.keyVaultName=${{ vars.KEY_VAULT_NAME }} \
+            --set azure.tenantId=${{ vars.AZURE_TENANT_ID }} \
+            --set ingress.className=webapprouting.kubernetes.azure.com \
+            --set ingress.host=${{ vars.INGRESS_HOST }}
+          kubectl -n petclinic rollout status deploy/petclinic --timeout=300s

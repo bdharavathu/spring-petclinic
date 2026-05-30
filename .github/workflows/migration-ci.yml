@@ -1,0 +1,67 @@
+name: migration-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - 'migration-assessment/docker/**'
+      - 'migration-assessment/helm/**'
+      - '.github/workflows/migration-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/petclinic
+
+jobs:
+  build-scan-push:
+    # only runs in the development repo; the public fork does not have the OIDC and secrets.
+    if: github.repository == 'bdharavathu/petclinic-aks-migration'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        run: docker buildx build --load -f migration-assessment/docker/Dockerfile -t petclinic:ci .
+
+      - name: Trivy scan
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/migration-assessment/docker/.trivyignore:/.trivyignore" \
+            aquasec/trivy:latest image \
+              --severity HIGH,CRITICAL --ignore-unfixed \
+              --ignorefile /.trivyignore --exit-code 1 petclinic:ci
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image to GHCR
+        run: |
+          docker tag petclinic:ci "$IMAGE:${GITHUB_SHA}"
+          docker tag petclinic:ci "$IMAGE:latest"
+          docker push "$IMAGE:${GITHUB_SHA}"
+          docker push "$IMAGE:latest"
+
+      # commented this section due to trail plan limitation
+      # - uses: azure/login@v2
+      #   with:
+      #     client-id: ${{ vars.AZURE_CLIENT_ID }}
+      #     tenant-id: ${{ vars.AZURE_TENANT_ID }}
+      #     subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      # - name: Push image to ACR
+      #   run: |
+      #     az acr login -n "$(echo ${{ vars.ACR_LOGIN_SERVER }} | cut -d. -f1)"
+      #     docker tag petclinic:ci "${{ vars.ACR_LOGIN_SERVER }}/petclinic:${GITHUB_SHA}"
+      #     docker push "${{ vars.ACR_LOGIN_SERVER }}/petclinic:${GITHUB_SHA}"

@@ -1,0 +1,38 @@
+name: migration-rollback
+
+# Manual rollback of the Helm release to a previous revision.
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: "Helm revision to roll back to (blank = previous)"
+        required: false
+        default: ""
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  rollback:
+    # only runs in the development repo; the public fork does not have the OIDC and secrets.
+    if: github.repository == 'bdharavathu/petclinic-aks-migration'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_NAME }}
+      - uses: azure/setup-helm@v4
+      - name: helm rollback
+        env:
+          REV: ${{ inputs.revision }}
+        run: |
+          helm rollback petclinic ${REV:-0} -n petclinic # 0 = previous revision
+          kubectl -n petclinic rollout status deploy/petclinic --timeout=300s

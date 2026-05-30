@@ -1,0 +1,79 @@
+name: terraform
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'terraform action'
+        required: true
+        default: 'plan'
+        type: choice
+        options: [plan, apply]
+
+  push:
+    branches: [main]
+    paths:
+      - 'migration-assessment/iac/terraform/**'
+      - '.github/workflows/terraform.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    # only runs in the development repo; the public fork does not have the OIDC and secrets.
+    if: github.repository == 'bdharavathu/petclinic-aks-migration'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: migration-assessment/iac/terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform init
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+        run: |
+          terraform init -input=false \
+            -backend-config="storage_account_name=${{ vars.TFSTATE_SA }}"
+
+      - name: terraform fmt + validate
+        run: |
+          terraform fmt -check
+          terraform validate
+
+      - name: terraform plan
+        if: ${{ github.event_name == 'push' || inputs.action == 'plan' || inputs.action == 'apply' }}
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+        run: |
+          terraform plan -input=false -out=tfplan \
+            -var-file=free-tier.tfvars \
+            -var="github_repo=${{ github.repository }}"
+
+      - name: terraform apply
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'apply' }}
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+        run: terraform apply -input=false -auto-approve tfplan
