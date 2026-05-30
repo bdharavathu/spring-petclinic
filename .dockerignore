@@ -1,0 +1,6 @@
+# keep the image build context to just the build inputs
+*
+!.mvn/
+!mvnw
+!pom.xml
+!src/

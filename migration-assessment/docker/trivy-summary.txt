@@ -1,0 +1,22 @@
+Trivy image scan - severity summary
+(counts only; CVE IDs and the full report are kept out of the public repo and shown in the
+ live review. Scanner: `trivy image`, image built from this folder's Dockerfile.)
+
+Base-image hardening: eclipse-temurin:21-jre  ->  gcr.io/distroless/java21-debian12
+
+  eclipse-temurin:21-jre (baseline)        CRITICAL  HIGH  MEDIUM  LOW
+    OS packages                                   0     0      69     3
+    pebble (bundled Go binary)                    0     8       0     0
+    application jar (dependencies)               10    11       5     3
+
+  gcr.io/distroless/java21-debian12 (current)
+    OS packages                                   1     3      18    24
+    application jar (dependencies)               10    11       5     3
+
+Notes:
+- Distroless removed the bundled `pebble` binary (8 HIGH) and the shell/package manager.
+- Remaining OS findings are base-image items: most are upstream won't-fix/no-fix (allowlisted
+  in .trivyignore) and the rest clear on a base-image refresh.
+- Application-jar findings are remediated by upgrading the Spring Boot parent and the
+  PostgreSQL JDBC driver; see README.md.
+- CI gate: fail the build on fixable HIGH/CRITICAL, ignore only the allowlisted CVEs.

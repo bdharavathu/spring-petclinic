@@ -1,0 +1,6 @@
+# Triaged base-OS CVEs (won't-fix, no-fix, or deferred to a base-image refresh).
+# Reviewed in docker/README.md. Application-dependency CVEs are NOT listed here, so the
+# CI scan gate fails on them until they are remediated in pom.xml.
+CVE-2023-45853   # zlib1g: Debian won't-fix, vulnerable minizip not compiled in
+CVE-2026-25210   # libexpat1: no upstream fix available yet - tracking
+CVE-2026-41254   # liblcms2-2: fixed in a later Debian point release; clears on base-image refresh

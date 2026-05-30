@@ -1,0 +1,35 @@
+# local run of the migrated image with externalized config (Module 2).
+#   export POSTGRES_PASS=...
+services:
+  postgres:
+    image: postgres:18.3
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-petclinic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASS:?set POSTGRES_PASS}
+      POSTGRES_DB: ${POSTGRES_DB:-petclinic}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-petclinic} -d ${POSTGRES_DB:-petclinic}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  petclinic:
+    build:
+      context: ../..
+      dockerfile: migration-assessment/docker/Dockerfile
+    image: petclinic:onprem
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-petclinic}
+      POSTGRES_USER: ${POSTGRES_USER:-petclinic}
+      POSTGRES_PASS: ${POSTGRES_PASS:?set POSTGRES_PASS}
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
