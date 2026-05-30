@@ -1,0 +1,13 @@
+# observe-only: report outbound tcp connects (exec/exit come from the base sensors)
+# cluster-wide here, filtered to petclinic when reading; TracingPolicyNamespaced on AKS
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: monitor-egress-connect
+spec:
+  kprobes:
+    - call: "tcp_connect"
+      syscall: false
+      args:
+        - index: 0
+          type: "sock"

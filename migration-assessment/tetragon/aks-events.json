@@ -1,0 +1,69 @@
+// 1) process_kprobe - tcp_connect fired with src/dst/protocol/state attributed to the pod:
+{
+  "process_kprobe": {
+    "process": {
+      "pid": 984554,
+      "uid": 65532,
+      "binary": "/usr/bin/curl",
+      "arguments": "-s -o /dev/null -w \"connect %{http_code}\\n\" https://api.github.com",
+      "start_time": "2026-05-30T02:44:40.169279626Z",
+      "pod": {
+        "namespace": "petclinic",
+        "name": "petclinic-769ff69c9d-4xvtc",
+        "container": {
+          "name": "debugger-pbtg4",
+          "image": { "name": "docker.io/curlimages/curl:latest" }
+        },
+        "workload": "petclinic",
+        "workload_kind": "Deployment"
+      }
+    },
+    "parent": {
+      "binary": "/usr/bin/containerd-shim-runc-v2"
+    },
+    "function_name": "tcp_connect",
+    "args": [
+      {
+        "sock_arg": {
+          "family": "AF_INET",
+          "type": "SOCK_STREAM",
+          "protocol": "IPPROTO_TCP",
+          "saddr": "10.244.1.125",
+          "daddr": "20.205.243.168",
+          "sport": 52442,
+          "dport": 443,
+          "state": "TCP_SYN_SENT"
+        }
+      }
+    ],
+    "policy_name": "monitor-egress-connect",
+    "action": "KPROBE_ACTION_POST"
+  },
+  "node_name": "aks-system-38774613-vmss000001",
+  "time": "2026-05-30T02:44:40.183740958Z"
+}
+
+// 2) process_exit - the curl process attributed to the petclinic pod via shared netns:
+{
+  "process_exit": {
+    "process": {
+      "pid": 984554,
+      "uid": 65532,
+      "binary": "/usr/bin/curl",
+      "arguments": "-s -o /dev/null -w \"connect %{http_code}\\n\" https://api.github.com",
+      "start_time": "2026-05-30T02:44:40.169279626Z",
+      "pod": {
+        "namespace": "petclinic",
+        "name": "petclinic-769ff69c9d-4xvtc",
+        "container": {
+          "name": "debugger-pbtg4",
+          "image": { "name": "docker.io/curlimages/curl:latest" }
+        },
+        "workload": "petclinic",
+        "workload_kind": "Deployment"
+      }
+    }
+  },
+  "node_name": "aks-system-38774613-vmss000001",
+  "time": "2026-05-30T02:44:40.208115385Z"
+}

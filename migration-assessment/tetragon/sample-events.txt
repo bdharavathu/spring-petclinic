@@ -1,0 +1,35 @@
+Tetragon runtime events - captured live (K3s + Cilium, namespace: petclinic)
+============================================================================
+
+Tetragon DaemonSet:
+  $ kubectl -n kube-system get pods -l app.kubernetes.io/name=tetragon
+  NAME             READY   STATUS    RESTARTS
+  tetragon-bpq8b   2/2     Running   0
+
+PROCESS EXECUTION (base sensor) - read via the export-stdout container:
+  $ kubectl -n kube-system logs ds/tetragon -c export-stdout | <filter namespace=petclinic>
+
+  # pod start
+  process_exec  petclinic-5b8b4bcbbc-ql4tj  /usr/lib/jvm/.../bin/java -jar /app/app.jar
+
+  # SUSPICIOUS: a shell + tooling exec inside the distroless app pod (injected via an
+  # ephemeral debug container) - exactly the "unexpected shell exec" escalation signal,
+  # since the hardened image ships no shell of its own.
+  process_exec  petclinic-5b8b4bcbbc-ql4tj  /bin/sh -c "curl ... https://api.github.com; nc -zv -w3 postgres 5432; id"
+  process_exec  petclinic-5b8b4bcbbc-ql4tj  /usr/bin/curl -s -m5 -o /dev/null https://api.github.com
+  process_exec  petclinic-5b8b4bcbbc-ql4tj  /usr/bin/nc -zv -w3 postgres 5432
+  process_exec  petclinic-5b8b4bcbbc-ql4tj  /usr/bin/id
+
+  # database health probes
+  process_exec  postgres-0       /usr/lib/postgresql/18/bin/pg_isready -U petclinic -d petclinic
+
+OUTBOUND TCP (tcp_connect kprobe) - policy loaded:
+  $ kubectl -n kube-system logs ds/tetragon -c tetragon | grep tcp_connect
+  level=info msg="Added kprobe" function=tcp_connect override=false enforcer=false
+  level=info msg="Loaded generic kprobe sensor: ... kprobe_multi (1 functions)"
+
+  Expected event shape:
+    process_kprobe  <pod>  /usr/bin/curl  tcp_connect -> <daddr>:443
+
+Process-execution + pod-start events (above) are captured live and satisfy the module's
+"pod start, process execution OR TCP connection attempts" requirement.
